@@ -1,17 +1,10 @@
 from datetime import date
 import pandas as pd
-from sqlalchemy import text
-from app.db.config import engine
+from app.config.config import engine
 
 # Resumen general
 def resumen():
-    query = text("""
-        SELECT 
-            COUNT(*) as total_cuentas,
-            SUM(valor) as total_facturado,
-            AVG(valor) as promedio
-        FROM cuentas_cobro;
-    """)
+    query = "SELECT * FROM resumen_cuentas_cobro();"
 
     df = pd.read_sql(query, engine)
     result = df.to_dict(orient="records")[0] if not df.empty else {}
@@ -20,15 +13,7 @@ def resumen():
 
 # Métricas por periodo
 def por_periodo():
-    query = text("""
-        SELECT 
-            periodo,
-            COUNT(*) as cantidad,
-            SUM(valor) as total
-        FROM cuentas_cobro
-        GROUP BY periodo
-        ORDER BY periodo;
-    """)
+    query = "SELECT * FROM cuentas_por_periodo();"
 
     df = pd.read_sql(query, engine)
     result = df.to_dict(orient="records")
@@ -37,16 +22,7 @@ def por_periodo():
 
 # Métricas por persona
 def por_persona():
-    query = text("""
-        SELECT 
-            nombre,
-            identificacion,
-            COUNT(*) as cantidad,
-            SUM(valor) as total
-        FROM cuentas_cobro
-        GROUP BY nombre, identificacion
-        ORDER BY total DESC;
-    """)
+    query = "SELECT * FROM cuentas_por_persona();"
 
     df = pd.read_sql(query, engine)
     result = df.to_dict(orient="records")
@@ -55,15 +31,7 @@ def por_persona():
 
 # Top meses
 def top_periodos():
-    query = text("""
-        SELECT 
-            periodo,
-            SUM(valor) as total
-        FROM cuentas_cobro
-        GROUP BY periodo
-        ORDER BY total DESC
-        LIMIT 5;
-    """)
+    query = "SELECT * FROM top_periodos();"
 
     df = pd.read_sql(query, engine)
     result = df.to_dict(orient="records")
@@ -72,14 +40,7 @@ def top_periodos():
 
 # Crecimiento mensual
 def crecimiento_mensual():
-    query = """
-        SELECT 
-            periodo,
-            SUM(valor) as total
-        FROM cuentas_cobro
-        GROUP BY periodo
-        ORDER BY periodo;
-    """
+    query = "SELECT * FROM total_por_periodo();"
 
     df = pd.read_sql(query, engine)
 
@@ -102,13 +63,7 @@ def crecimiento_mensual():
 
 # Métricas por rango de fechas
 def por_rango_fechas(fecha_inicio: date, fecha_fin: date):
-    query = text("""
-        SELECT 
-            COUNT(*) as total,
-            SUM(valor) as total_valor
-        FROM cuentas_cobro
-        WHERE fecha BETWEEN :inicio AND :fin;
-    """)
+    query = "SELECT * FROM cuentas_resumen_rango(%(inicio)s, %(fin)s);"
 
     df = pd.read_sql(query, engine, params={"inicio": fecha_inicio, "fin": fecha_fin})
     result = df.to_dict(orient="records")[0] if not df.empty else {}

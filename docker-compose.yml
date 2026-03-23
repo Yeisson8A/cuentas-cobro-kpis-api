@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  cuentas-cobro-kpis-api:
+    build: .
+    container_name: cuentas-cobro-kpis-api
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    networks:
+      - cuentas-cobro-net
+
+networks:
+  cuentas-cobro-net:
+    external: true
