@@ -1,12 +1,13 @@
-CREATE OR REPLACE FUNCTION cuentas_resumen_rango(
-    fecha_inicio DATE,
-    fecha_fin DATE
-)
-RETURNS TABLE (
-    total BIGINT,
-    total_valor NUMERIC
-)
-AS $$
+CREATE OR REPLACE FUNCTION public.cuentas_resumen_rango(
+	fecha_inicio date,
+	fecha_fin date)
+    RETURNS TABLE(total bigint, total_valor numeric) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
 BEGIN
     RETURN QUERY
     SELECT 
@@ -15,4 +16,7 @@ BEGIN
     FROM cuentas_cobro
     WHERE fecha BETWEEN fecha_inicio AND fecha_fin;
 END;
-$$ LANGUAGE plpgsql;
+$BODY$;
+
+ALTER FUNCTION public.cuentas_resumen_rango(date, date)
+    OWNER TO postgres;

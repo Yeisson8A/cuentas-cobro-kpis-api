@@ -1,10 +1,12 @@
-CREATE OR REPLACE FUNCTION resumen_cuentas_cobro()
-RETURNS TABLE (
-    total_cuentas BIGINT,
-    total_facturado NUMERIC,
-    promedio NUMERIC
-)
-AS $$
+CREATE OR REPLACE FUNCTION public.resumen_cuentas_cobro(
+	)
+    RETURNS TABLE(total_cuentas bigint, total_facturado numeric, promedio numeric) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE PARALLEL UNSAFE
+    ROWS 1000
+
+AS $BODY$
 BEGIN
     RETURN QUERY
     SELECT 
@@ -13,4 +15,7 @@ BEGIN
         COALESCE(AVG(valor), 0) AS promedio
     FROM cuentas_cobro;
 END;
-$$ LANGUAGE plpgsql;
+$BODY$;
+
+ALTER FUNCTION public.resumen_cuentas_cobro()
+    OWNER TO postgres;
