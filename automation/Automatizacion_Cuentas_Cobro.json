@@ -1,0 +1,474 @@
+{
+  "name": "Automatizacion_Cuentas_Cobro",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "044c8e0b-870f-4603-bfa2-cc43b09b9db3",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "c18dbadb-1cea-4095-938c-30fcfff0f4c8",
+      "name": "Webhook",
+      "webhookId": "044c8e0b-870f-4603-bfa2-cc43b09b9db3"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        0
+      ],
+      "id": "c7e175a1-143a-4d7c-8d19-d559b495eb93",
+      "name": "Extract from File",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text;\n\n// Nombre (A favor de:)\nconst nombreMatch = text.match(/A favor de:\\s*([\\s\\S]*?)\\nNúmero Identificación:/i);\nconst nombre = nombreMatch\n  ? nombreMatch[1].replace(/\\n/g, \" \").trim()\n  : null;\n\n// Número de identificación (el segundo, el de la persona)\nconst idMatches = text.match(/Número Identificación:\\s*\\n?(\\d{6,})/g);\nlet identificacion = null;\n\nif (idMatches && idMatches.length > 0) {\n  const lastMatch = idMatches[idMatches.length - 1];\n  const numMatch = lastMatch.match(/(\\d{6,})/);\n  \n  if (numMatch) {\n    identificacion = numMatch[1];\n  }\n}\n\n// Valor total\nconst valorMatch = text.match(/TOTAL A PAGAR\\s*\\n?\\$?\\s*([\\d\\.]+)/i);\nconst valor = valorMatch\n  ? parseInt(valorMatch[1].replace(/\\./g, \"\"))\n  : null;\n\n// Fecha\nconst fechaMatch = text.match(/Lugar y fecha:\\s*.*?,\\s*(\\d{2}\\/\\d{2}\\/\\d{4})/i);\nconst fechaTmp = fechaMatch ? fechaMatch[1] : null;\n\n// Periodo y fecha tipo Date\nlet periodo = null;\nlet fecha = null;\n\nif (fechaTmp) {\n  const [mes, dia, anio] = fechaTmp.split(\"/\");\n  periodo = `${anio}${mes.padStart(2, \"0\")}`;\n  fecha = new Date(\n    parseInt(anio),\n    parseInt(mes) - 1, // ⚠️ los meses van de 0 a 11\n    parseInt(dia)\n  );\n}\n\n// Concepto\nconst conceptoMatch = text.match(/CONCEPTO VALOR\\s*([\\s\\S]*?)\\n\\$[\\d\\.]+/i);\n\nconst concepto = conceptoMatch\n  ? conceptoMatch[1]\n      .replace(/\\n/g, \" \")     // une líneas\n      .replace(/\\s+/g, \" \")    // limpia espacios dobles\n      .trim()\n  : null;\n\nreturn [\n  {\n    nombre,\n    identificacion,\n    valor,\n    fecha,\n    periodo,\n    concepto\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "59873bc2-9261-4e1b-89ac-987972bf0124",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cuentas_cobro",
+          "mode": "list",
+          "cachedResultName": "cuentas_cobro"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "valor": "={{ $('Code in JavaScript').item.json.valor }}",
+            "periodo": "={{ $('Code in JavaScript').item.json.periodo }}",
+            "identificacion": "={{ $('Code in JavaScript').item.json.identificacion }}",
+            "nombre": "={{ $('Code in JavaScript').item.json.nombre }}",
+            "fecha": "={{ $('Code in JavaScript').item.json.fecha }}",
+            "concepto": "={{ $('Code in JavaScript').item.json.concepto }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_cuenta_cobro",
+              "displayName": "id_cuenta_cobro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "identificacion",
+              "displayName": "identificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "concepto",
+              "displayName": "concepto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1520,
+        -128
+      ],
+      "id": "d7292ae0-3380-4c20-87ee-b172a5c501db",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "NeefIeUfqtBD8UPF",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "86bbda49-a439-4e5a-b4fb-28b509320d07",
+              "leftValue": "={{ $json.total_records }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        0
+      ],
+      "id": "105adf2f-a5d9-4c71-b1d8-9bce0a5c0f80",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT CAST(COUNT(*) as INTEGER) as total_records \nFROM cuentas_cobro \nWHERE periodo = '{{ $json.periodo }}' AND identificacion = '{{ $json.identificacion }}'",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        688,
+        0
+      ],
+      "id": "5fe593d9-d135-461a-a81d-f1afc9b3e46a",
+      "name": "Query Validate If Exists",
+      "credentials": {
+        "postgres": {
+          "id": "NeefIeUfqtBD8UPF",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"message\": \"Ya existe una cuenta de cobro registrada para este documento {{ $('Code in JavaScript').item.json.identificacion }} y periodo {{ $('Code in JavaScript').item.json.periodo }}\",\n  \"error\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1216,
+        96
+      ],
+      "id": "a53dea75-22e8-46fd-83be-ba82fcdf576e",
+      "name": "Response Already Exists"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Se ha registrado correctamente la cuenta de cobro\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1792,
+        -128
+      ],
+      "id": "e60a6e51-f6e6-44c4-a97f-2a636722799d",
+      "name": "Response Correctly"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "de282bb1-cc58-4c3f-b549-e6bd090be773",
+              "name": "nombre",
+              "value": "={{ $('Code in JavaScript').item.json.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "b2ad6223-77c8-4ec9-a9c7-79404051e28d",
+              "name": "identificacion",
+              "value": "={{ $('Code in JavaScript').item.json.identificacion }}",
+              "type": "string"
+            },
+            {
+              "id": "42efb33b-2d76-48d3-a6dc-b9e445240ca3",
+              "name": "valor",
+              "value": "={{ $('Code in JavaScript').item.json.valor }}",
+              "type": "number"
+            },
+            {
+              "id": "3bd26a64-4b11-43d5-bcaf-673b5b91f844",
+              "name": "fecha",
+              "value": "={{ $('Code in JavaScript').item.json.fecha }}",
+              "type": "string"
+            },
+            {
+              "id": "86a5886b-8a99-4c74-96bd-729d4e9df794",
+              "name": "periodo",
+              "value": "={{ $('Code in JavaScript').item.json.periodo }}",
+              "type": "string"
+            },
+            {
+              "id": "8ae30be2-dd20-480a-ab81-13ea91de257b",
+              "name": "concepto",
+              "value": "={{ $('Code in JavaScript').item.json.concepto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1216,
+        -80
+      ],
+      "id": "78651e8c-d161-4b6d-a2f1-6f08a0a642c7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"El archivo no es válido\",\n  \"error\": true\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        432,
+        224
+      ],
+      "id": "d60077b0-0be0-4c9c-9c71-f4f234f5a8bc",
+      "name": "Respond Error Extract"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Ha ocurrido un error con la base de datos\",\n  \"error\": true\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        912,
+        224
+      ],
+      "id": "37850d11-117e-48eb-b00d-d0b9fe276ff1",
+      "name": "Respond Error Validate DB"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"Ha ocurrido un error con la base de datos\",\n  \"error\": true\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1792,
+        128
+      ],
+      "id": "0aef8ee3-d1a9-4038-8c00-14743d92094d",
+      "name": "Respond Error Insert DB"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Query Validate If Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Response Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Response Correctly",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error Insert DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Validate If Exists": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error Validate DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "26268479-de18-4a32-8a8b-905a5b87b10f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53639aa2e1e119e15c84e4ae1493e76f9ff58e818d1199033510556a3bcbbbc0"
+  },
+  "id": "CySNkrAiYvEGUuXy",
+  "tags": []
+}
